@@ -89,6 +89,7 @@ class FireFoxBrowser:
         self.profile.set_preference("network.proxy.ssl_port", self.proxy.port)
         self.profile.webdriver_accept_untrusted_certs = True
         self.profile.update_preferences()
+        return
 
 
 def scrolldown(driver: webdriver, cnt: Optional[int] = 1, delay: Optional[int] = 5) -> None:

@@ -91,22 +91,35 @@ class InstagramTest(BaseTest):
         time.sleep(5)
 
         # TODO: prob create decorator function for the timeout
-        timeout = time.time() + 60 * duration  # 5 minutes from now
+        start_time = time.time()
+        timeout = start_time + 60 * duration
+        times_scrolled_down_global = 0
         times_scrolled_down = 0
         while True:
             if time.time() > timeout:
                 break
 
             scrolldown(driver=self.driver, cnt=1, delay=0)
+            scrollup(driver=self.driver, cnt=15, delay=.1) # just add an additional scroll up here....
             times_scrolled_down += 1
+            times_scrolled_down_global += 1
 
             if randowait:
                 time.sleep(uniform(randowait[0], randowait[1]))
             else:
                 time.sleep(wait)
 
-            if times_scrolled_down == 5: # Prevent scrolling bug of instagram 
+            if times_scrolled_down > 4: # Prevent scrolling bug of instagram 
                 times_scrolled_down = 0
-                scrollup(driver=self.driver, cnt=2, delay=0)
+                scrollup(driver=self.driver, cnt=80, delay=.5)
+            # every now and then the scroll will get stuck. So do some big 
+            # scrolling here, prob could make this a whole lot better
+            # also scroll if it's been 5 minutes
+            if times_scrolled_down_global > 40: 
+                scrollup(driver=self.driver, cnt=80, delay=.3)
+                times_scrolled_down_global = 0
+
+            if time.time() - start_time > 20:
+                print('hit', time.time() - start_time > 20)
 
         return
