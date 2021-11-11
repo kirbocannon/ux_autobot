@@ -141,7 +141,8 @@ cython_debug/
 hars/
 
 # reports 
-reports/*.*
+reports/*.csv
+reports/*.txt
 
 # config file
 config.yaml

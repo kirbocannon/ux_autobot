@@ -89,9 +89,9 @@ def analyze_harfile(har_filename, dl_threshold):
 
 
 def main():
-    # results = run(minutes_browsing=1)
-    # har_filename = results["har_filename"]
-    har_filename = "instagram_1636621800.4872868.json"
+    results = run(minutes_browsing=1)
+    har_filename = results["har_filename"]
+    #har_filename = "instagram_1636621800.4872868.json"
     report_entry = analyze_harfile(har_filename=f"{har_filename}", dl_threshold=GLOBAL_DL_THREHOLD)
     dump_report(report_entry=report_entry, root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD)
 

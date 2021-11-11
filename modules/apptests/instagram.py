@@ -5,7 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from modules.browser import scroll
+from modules.browser import scrolldown, scrollup
 
 from modules.apptests.base import BaseTest
 
@@ -92,14 +92,21 @@ class InstagramTest(BaseTest):
 
         # TODO: prob create decorator function for the timeout
         timeout = time.time() + 60 * duration  # 5 minutes from now
+        times_scrolled_down = 0
         while True:
             if time.time() > timeout:
                 break
 
-            scrolldown = scroll(self.driver, 1, delay=0)
+            scrolldown(driver=self.driver, cnt=1, delay=0)
+            times_scrolled_down += 1
+
             if randowait:
                 time.sleep(uniform(randowait[0], randowait[1]))
             else:
                 time.sleep(wait)
+
+            if times_scrolled_down == 5: # Prevent scrolling bug of instagram 
+                times_scrolled_down = 0
+                scrollup(driver=self.driver, cnt=2, delay=0)
 
         return

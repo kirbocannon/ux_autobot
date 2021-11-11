@@ -13,10 +13,11 @@ class BaseTest:
         urls: List[str],
         wait: Optional[float] = 0.5,
         randowait: Optional[tuple] = None,
-    ) -> dict:
+    ) -> None:
         for url in urls:
             self.driver.get(url)
             if randowait:
                 time.sleep(randint(randowait[0], randowait[1]))
             else:
                 time.sleep(wait)
+        return

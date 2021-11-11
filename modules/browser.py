@@ -6,7 +6,6 @@ from typing import Optional
 from utils.applogger import apptest_logger
 
 from selenium import webdriver
-from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -92,10 +91,19 @@ class FireFoxBrowser:
         self.profile.update_preferences()
 
 
-def scroll(driver, cnt=1, delay=8):
+def scrolldown(driver: webdriver, cnt: Optional[int] = 1, delay: Optional[int] = 5) -> None:
     scroll_script = "window.scrollTo(0, document.body.scrollHeight);var scrolldown=document.body.scrollHeight;return scrolldown;"
     for i in range(0, cnt):
         driver.execute_script(scroll_script)
         time.sleep(delay)
 
-    return True
+    return 
+
+
+def scrollup(driver: webdriver, cnt: Optional[int] = 1, delay: Optional[int] = 5) -> None:
+    scroll_script = "window.scrollTo(0, document.body.scrollHeight);var scrollup=document.body.scrollHeight;return scrollup;"
+    for i in range(0, cnt):
+        driver.execute_script(scroll_script)
+        time.sleep(delay)
+
+    return 
