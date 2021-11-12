@@ -26,3 +26,7 @@ def remove_size_suffix(bytes_: str) -> float:
     except:
 
         return 0.0
+
+
+def gb_to_mb(n):
+    return n * 1000

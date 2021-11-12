@@ -92,19 +92,23 @@ class FireFoxBrowser:
         return
 
 
-def scrolldown(driver: webdriver, cnt: Optional[int] = 1, delay: Optional[int] = 5) -> None:
+def scrolldown(
+    driver: webdriver, cnt: Optional[int] = 1, delay: Optional[int] = 5
+) -> None:
     scroll_script = "window.scrollTo(0, document.body.scrollHeight);var scrolldown=document.body.scrollHeight;return scrolldown;"
     for i in range(0, cnt):
         driver.execute_script(scroll_script)
         time.sleep(delay)
 
-    return 
+    return
 
 
-def scrollup(driver: webdriver, cnt: Optional[int] = 1, delay: Optional[int] = 5) -> None:
+def scrollup(
+    driver: webdriver, cnt: Optional[int] = 1, delay: Optional[int] = 5
+) -> None:
     scroll_script = "window.scrollTo(0, document.body.scrollHeight);var scrollup=document.body.scrollHeight;return scrollup;"
     for i in range(0, cnt):
         driver.execute_script(scroll_script)
         time.sleep(delay)
 
-    return 
+    return

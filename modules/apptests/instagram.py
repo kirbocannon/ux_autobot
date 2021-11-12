@@ -1,5 +1,6 @@
 import time
 from random import uniform
+from copy import copy
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -51,8 +52,9 @@ class InstagramTest(BaseTest):
 
         return True
 
-    def browse_cute_animal_pictures(
+    def browse_hashtag(
         self,
+        hashtag: str,
         duration: int,
         wait: Optional[float] = None,
         randowait: Optional[tuple] = None,
@@ -62,6 +64,8 @@ class InstagramTest(BaseTest):
         1.) Use IG search bar to browse '#animals'
         2.) Scroll through pictures randomly by default for the duration specified
 
+        :param hashtag: Hashtag to search
+        :type hashtag: str
         :param duration: Duration of browsing in minutes
         :type duration: int
         :param wait: how long to wait between scrolls
@@ -71,6 +75,8 @@ class InstagramTest(BaseTest):
         :return: Nothing
         :rtype: None
         """
+
+        hashtag = hashtag.split("#")[1] if hashtag.startswith("#") else hashtag
 
         if not randowait and not wait:
             randowait = (0.3, 2)
@@ -83,7 +89,7 @@ class InstagramTest(BaseTest):
             By.CSS_SELECTOR, "input[placeholder='Search']"
         )
         searchbox.clear()
-        searchbox.send_keys("#animals")
+        searchbox.send_keys(f"#{hashtag}")
         time.sleep(2)
         searchbox.send_keys(Keys.ENTER)
         time.sleep(2)
@@ -92,6 +98,9 @@ class InstagramTest(BaseTest):
 
         # TODO: prob create decorator function for the timeout
         start_time = time.time()
+        start_time_relative_after_timer = copy(
+            start_time
+        )  # relative start time after inner timer is reached
         timeout = start_time + 60 * duration
         times_scrolled_down_global = 0
         times_scrolled_down = 0
@@ -100,7 +109,9 @@ class InstagramTest(BaseTest):
                 break
 
             scrolldown(driver=self.driver, cnt=1, delay=0)
-            scrollup(driver=self.driver, cnt=15, delay=.1) # just add an additional scroll up here....
+            scrollup(
+                driver=self.driver, cnt=15, delay=0.1
+            )  # just add an additional scroll up here....
             times_scrolled_down += 1
             times_scrolled_down_global += 1
 
@@ -109,17 +120,19 @@ class InstagramTest(BaseTest):
             else:
                 time.sleep(wait)
 
-            if times_scrolled_down > 4: # Prevent scrolling bug of instagram 
+            if times_scrolled_down > 4:  # Prevent scrolling bug of instagram
                 times_scrolled_down = 0
-                scrollup(driver=self.driver, cnt=80, delay=.5)
-            # every now and then the scroll will get stuck. So do some big 
+                scrollup(driver=self.driver, cnt=80, delay=0.5)
+            # every now and then the scroll will get stuck. So do some big
             # scrolling here, prob could make this a whole lot better
             # also scroll if it's been 5 minutes
-            if times_scrolled_down_global > 40: 
-                scrollup(driver=self.driver, cnt=80, delay=.3)
+            if times_scrolled_down_global > 40:
+                scrollup(driver=self.driver, cnt=20, delay=0.3)
                 times_scrolled_down_global = 0
 
-            if time.time() - start_time > 20:
-                print('hit', time.time() - start_time > 20)
+            # scroll every 60 seconds regardless
+            if (time.time() - start_time_relative_after_timer) > 60:
+                scrollup(driver=self.driver, cnt=20, delay=1)
+                start_time_relative_after_timer = start_time_relative_after_timer + 60
 
         return

@@ -10,7 +10,7 @@ from browsermobproxy import Server
 from selenium import webdriver
 
 from utils.data import load_yaml, get_abs_path, save_har, get_filenames
-from utils.metrics import ms_to_s, convert_bytes, remove_size_suffix
+from utils.metrics import ms_to_s, convert_bytes, remove_size_suffix, gb_to_mb
 from utils.system import kill_existing_proc
 from utils.reports import ReportEntry, dump_report
 
@@ -36,7 +36,7 @@ def run(minutes_browsing):
             password=ig_cfg["password"],
             driver=browser.driver,
         )
-        ig.browse_cute_animal_pictures(duration=minutes_browsing)
+        ig.browse_hashtag(hashtag="cars", duration=minutes_browsing)
 
     har_saved_results = save_har(
         location=PATH, data=browser.har, timestamp=timestamp, prefix="instagram"
@@ -70,13 +70,27 @@ def analyze_harfile(har_filename, dl_threshold):
                 )
 
         print(f"First download time of image/video content {first_start_time}")
-        print(f"Images and Videos downloaded above one second {num_entries}")
+        print(
+            f"Images and Videos downloaded above {dl_threshold} seconds {num_entries}"
+        )
 
         total_images_download_size = convert_bytes(page.image_size)
         total_images_load_time = ms_to_s(page.image_load_time)
+        score = round(
+            10.0
+            - (
+                total_images_load_time
+                / remove_size_suffix(
+                    gb_to_mb(total_images_download_size)
+                    if "G" in total_images_download_size
+                    else total_images_download_size
+                )
+            ),
+            2,
+        )  # TODO: hacky but OK for now
 
         print(
-            f"{len(page.image_files)} ({total_images_download_size}) images downloaded in {total_images_load_time} seconds. Score {round(10.0 - (total_images_load_time / remove_size_suffix(total_images_download_size) ), 2)}"
+            f"{len(page.image_files)} ({total_images_download_size}) images downloaded in {total_images_load_time / 1000} second(s). Score {score}"
         )
 
         print(ms_to_s(page.get_load_time(content_type="(image|video)")))
@@ -89,11 +103,15 @@ def analyze_harfile(har_filename, dl_threshold):
 
 
 def main():
-    results = run(minutes_browsing=30)
+    results = run(minutes_browsing=CFG["global"]["browsing_minutes"])
     har_filename = results["har_filename"]
-    #har_filename = "instagram_1636621800.4872868.json"
-    report_entry = analyze_harfile(har_filename=f"{har_filename}", dl_threshold=GLOBAL_DL_THREHOLD)
-    dump_report(report_entry=report_entry, root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD)
+    # har_filename = "instagram_1636621800.4872868.json"
+    report_entry = analyze_harfile(
+        har_filename=f"{har_filename}", dl_threshold=GLOBAL_DL_THREHOLD
+    )
+    dump_report(
+        report_entry=report_entry, root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
+    )
 
 
 if __name__ == "__main__":

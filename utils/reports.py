@@ -2,7 +2,7 @@ import os
 import csv
 from typing import List, Optional
 from datetime import datetime
-from utils.metrics import ms_to_s, convert_bytes, remove_size_suffix
+from utils.metrics import ms_to_s, convert_bytes, remove_size_suffix, gb_to_mb
 from utils.applogger import report_logger
 
 
@@ -30,7 +30,16 @@ class ReportEntry:
             image_files=len(self.page.image_files),
             total_image_size=t_dl_size,
             total_image_load_time=t_img_load_time,
-            score=round(10.0 - (t_img_load_time / remove_size_suffix(t_dl_size)), 2)
+            score=round(
+                10.0
+                - (
+                    t_img_load_time
+                    / remove_size_suffix(
+                        gb_to_mb(t_dl_size) if "G" in t_dl_size else t_dl_size
+                    )
+                ),
+                2,
+            )  # TODO: very hacky and assumes a lot. Re-work
             if self.page.image_files
             else 0,
         )
@@ -63,9 +72,11 @@ class ReportEntry:
         return l
 
 
-def dump_report(report_entry: ReportEntry, root_path: str, dl_threshold: int) -> None: # TODO: make more reusable
+def dump_report(
+    report_entry: ReportEntry, root_path: str, dl_threshold: int
+) -> None:  # TODO: make more reusable
     """
-    Dumps report to reports/ as a txt file and also creates a csv 
+    Dumps report to reports/ as a txt file and also creates a csv
     """
     now = str(datetime.now())
     dl_threshold = ms_to_s(dl_threshold)
@@ -83,7 +94,7 @@ def dump_report(report_entry: ReportEntry, root_path: str, dl_threshold: int) ->
     {report_entry.overall_video_stats["video_files"]} ({report_entry.overall_video_stats["total_video_size"]}) videos downloaded in {report_entry.overall_video_stats["total_video_load_time"]} seconds
     Score {report_entry.overall_image_stats["score"]}
 
-    Har entries that exceeded the download duration threshold of {dl_threshold} second(s): \n{har_entry_stats}
+    Har entries that exceeded the download duration threshold of {dl_threshold / 1000} second(s): \n{har_entry_stats}
     --------------------------------------------------------------------------------
     """
     report_logger.debug(output)
@@ -92,34 +103,45 @@ def dump_report(report_entry: ReportEntry, root_path: str, dl_threshold: int) ->
     csv_filename = f"{root_path}/reports/reports.csv"
 
     fieldnames = [
-        'date',
-        'har_filename',
-        'images_videos_count', 
-        'image_count', 
-        'total_image_size', 
-        'total_image_load_time', 
-        'video_count', 
-        'total_video_size', 
-        'total_video_load_time',
-        'score'
-        ]
-    with open(csv_filename, 'a+') as f:
-        dw = csv.DictWriter(f, delimiter=',', fieldnames=fieldnames, lineterminator='\n')
+        "date",
+        "har_filename",
+        "images_videos_count",
+        "image_count",
+        "total_image_size",
+        "total_image_load_time",
+        "video_count",
+        "total_video_size",
+        "total_video_load_time",
+        "score",
+    ]
+    with open(csv_filename, "a+") as f:
+        dw = csv.DictWriter(
+            f, delimiter=",", fieldnames=fieldnames, lineterminator="\n"
+        )
         if os.stat(csv_filename).st_size == 0:
             dw.writeheader()
 
-        dw.writerow({
-            "date": now,
-            "har_filename": report_entry.har_filename,
-            "images_videos_count": report_entry.num_entries,
-            "image_count": report_entry.overall_image_stats["image_files"],
-            "total_image_size": report_entry.overall_image_stats["total_image_size"],
-            "total_image_load_time": report_entry.overall_image_stats["total_image_load_time"],
-            "video_count": report_entry.overall_video_stats["video_files"],
-            "total_video_size": report_entry.overall_video_stats["total_video_size"],
-            "total_video_load_time": report_entry.overall_video_stats["total_video_load_time"],
-            "score": report_entry.overall_image_stats["score"]
-        })
-
+        dw.writerow(
+            {
+                "date": now,
+                "har_filename": report_entry.har_filename,
+                "images_videos_count": report_entry.num_entries,
+                "image_count": report_entry.overall_image_stats["image_files"],
+                "total_image_size": report_entry.overall_image_stats[
+                    "total_image_size"
+                ],
+                "total_image_load_time": report_entry.overall_image_stats[
+                    "total_image_load_time"
+                ],
+                "video_count": report_entry.overall_video_stats["video_files"],
+                "total_video_size": report_entry.overall_video_stats[
+                    "total_video_size"
+                ],
+                "total_video_load_time": report_entry.overall_video_stats[
+                    "total_video_load_time"
+                ],
+                "score": report_entry.overall_image_stats["score"],
+            }
+        )
 
     return
