@@ -21,18 +21,17 @@ PATH = get_abs_path(__file__)
 
 PROCS_TO_KILL = ["java.exe", "firefox.exe", "browsermob-proxy"]
 PROXY_SERVER_PATH = f"{PATH}/modules/browsermob-proxy-2.1.4/bin/browsermob-proxy.bat"
+WINDOWS_PROCS_TO_KILL = ["java.exe", "firefox.exe", "browsermob-proxy"]
+LINUX_PROCS_TO_KILL = ["browsermob-prox", "browsermob-proxy", "java"]
+WINDOWS_PROXY_SERVER_PATH = (
+    f"{PATH}\\browsermob-proxy-2.1.4\\bin\\browsermob-proxy.bat"
+)
+LINUX_PROXY_SERVER_PATH = (
+    f"{PATH}/modules/browsermob-proxy-2.1.4/bin/browsermob-proxy.bat"
+)
 
 
 class FireFoxBrowser:
-    WINDOWS_PROCS_TO_KILL = ["java.exe", "firefox.exe", "browsermob-proxy"]
-    LINUX_PROCS_TO_KILL = ["browsermob-prox", "browsermob-proxy", "java"]
-    WINDOWS_PROXY_SERVER_PATH = (
-        f"{PATH}\\browsermob-proxy-2.1.4\\bin\\browsermob-proxy.bat"
-    )
-    LINUX_PROXY_SERVER_PATH = (
-        f"{PATH}/modules/browsermob-proxy-2.1.4/bin/browsermob-proxy.bat"
-    )
-
     def __init__(
         self,
         host_type: Optional[str] = "windows" if os.name == "nt" else "linux",
@@ -43,12 +42,12 @@ class FireFoxBrowser:
         har_name: Optional[str] = "networkanalysis",
     ):
         if host_type == "windows" and not proxy_server_path:
-            self.proxy_server_path = self.WINDOWS_PROXY_SERVER_PATH
-            self._procs_to_kill = self.WINDOWS_PROCS_TO_KILL
+            self.proxy_server_path = WINDOWS_PROXY_SERVER_PATH
+            self._procs_to_kill = WINDOWS_PROCS_TO_KILL
 
         elif host_type == "linux" and not proxy_server_path:
-            self.proxy_server_path = self.LINUX_PROXY_SERVER_PATH
-            self._procs_to_kill = self.LINUX_PROCS_TO_KILL
+            self.proxy_server_path = LINUX_PROXY_SERVER_PATH
+            self._procs_to_kill = LINUX_PROCS_TO_KILL
 
         self.profile = webdriver.FirefoxProfile()
         self.proxy_server_port = proxy_server_port

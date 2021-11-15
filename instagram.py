@@ -105,7 +105,6 @@ def analyze_harfile(har_filename, dl_threshold):
 def main():
     results = run(minutes_browsing=CFG["global"]["browsing_minutes"])
     har_filename = results["har_filename"]
-    # har_filename = "instagram_1636621800.4872868.json"
     report_entry = analyze_harfile(
         har_filename=f"{har_filename}", dl_threshold=GLOBAL_DL_THREHOLD
     )
@@ -115,13 +114,26 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
 
     # b = convert_bytes(2.1e+6)
     # print(b)
+    urls = [
+        "https://i.pcmag.com/imagery/reviews/06ji8RYPqUgapSKX1i7ngHR-1..1597349594.jpg",
+        "https://i.pcmag.com/imagery/reviews/04xTDKsqdUzgKvWI7MGVnG3-1.1598204639.fit_lim.size_625x365.jpg",
+        "https://pisces.bbystatic.com/image2/BestBuy_US/Gallery/sml_desktop-6402515-MMT-314623-0904-der-180096.jpg;maxHeight=350;maxWidth=1000",
+        "https://images.unsplash.com/photo-1598986646512-9330bcc4c0dc?ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8Y29tcHV0ZXJzfGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&w=1000&q=80"
 
-    # creds = load_yaml(f"{PATH}/config.yaml")["websites"]["thegram"]
-    # with FireFoxBrowser() as browser:
-    #     ig = InstagramTest(username=creds["username"], password=creds["password"], driver=browser.driver, autologin=False)
-    #     ig.browse_cute_animal_pictures(scroll_count=5)
-    #     ig.get_content(urls=["https://google.com"], randowait=(2, 15))
+    ]
+
+    creds = load_yaml(f"{PATH}/config.yaml")["websites"]["thegram"]
+    with FireFoxBrowser() as browser:
+        ig = InstagramTest(username=creds["username"], password=creds["password"], driver=browser.driver, autologin=False)
+        ig.get_content(urls=["https://google.com"])
+
+        report_entry = analyze_harfile(
+            raw=browser.har, dl_threshold=GLOBAL_DL_THREHOLD
+        )
+        dump_report(
+            report_entry=report_entry, root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
+        )

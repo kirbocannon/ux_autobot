@@ -55,48 +55,48 @@ class HarParser:
             )
         self.har_data = har_data["log"]
 
-    @staticmethod
-    @convert_to_entry
-    def match_headers(
-        entry: "HarEntry", header_type: str, header: str, value: str, regex: bool = True
-    ) -> bool:
-        # pylint: disable=R0913
-        """
-        Function to match headers.
+    # @staticmethod
+    # @convert_to_entry
+    # def match_headers(
+    #     entry: "HarEntry", header_type: str, header: str, value: str, regex: bool = True
+    # ) -> bool:
+    #     # pylint: disable=R0913
+    #     """
+    #     Function to match headers.
 
-        Since the output of headers might use different case, like:
+    #     Since the output of headers might use different case, like:
 
-            'content-type' vs 'Content-Type'
+    #         'content-type' vs 'Content-Type'
 
-        This function is case-insensitive
+    #     This function is case-insensitive
 
-        :param entry: Entry to analyze
-        :type entry: HarEntry
-        :param header_type: Header type. Valid values: 'request', or 'response'
-        :type header_type: str
-        :param header: The header to search for
-        :type header: str
-        :param value: The value to search for
-        :type value: str
-        :param regex: Whether to use regex or exact match
-        :type regex: bool
+    #     :param entry: Entry to analyze
+    #     :type entry: HarEntry
+    #     :param header_type: Header type. Valid values: 'request', or 'response'
+    #     :type header_type: str
+    #     :param header: The header to search for
+    #     :type header: str
+    #     :param value: The value to search for
+    #     :type value: str
+    #     :param regex: Whether to use regex or exact match
+    #     :type regex: bool
 
-        :returns: Whether a match was found
-        :rtype: bool
-        """
-        if header_type not in ["request", "response"]:
-            raise ValueError(
-                "Invalid header_type, should be either:\n\n" "* 'request'\n*'response'"
-            )
+    #     :returns: Whether a match was found
+    #     :rtype: bool
+    #     """
+    #     if header_type not in ["request", "response"]:
+    #         raise ValueError(
+    #             "Invalid header_type, should be either:\n\n" "* 'request'\n*'response'"
+    #         )
 
-        # TODO - headers are empty in some HAR data.... need fallbacks here
-        for h in getattr(entry, header_type).headers:
-            if h["name"].lower() == header.lower() and h["value"] is not None:
-                if regex and re.search(value, h["value"], flags=re.IGNORECASE):
-                    return True
-                if value == h["value"]:
-                    return True
-        return False
+    #     # TODO - headers are empty in some HAR data.... need fallbacks here
+    #     for h in getattr(entry, header_type).headers:
+    #         if h["name"].lower() == header.lower() and h["value"] is not None:
+    #             if regex and re.search(value, h["value"], flags=re.IGNORECASE):
+    #                 return True
+    #             if value == h["value"]:
+    #                 return True
+    #     return False
 
     @staticmethod
     @convert_to_entry
@@ -469,9 +469,11 @@ class HarPage:
             So yea... this is a bit ugly. We are looking for:
 
                 * The request type using self._match_request_type()
-                * The content type using self._match_headers()
+                * The content type using self._match_headers() 
                 * The HTTP response status code using self._match_status_code()
                 * The HTTP version using self._match_headers()
+
+                # TODO: do we even need match_headers()?
 
             Oh lords of python.... please forgive my soul
             """
