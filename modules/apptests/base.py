@@ -12,8 +12,11 @@ class BaseTest:
         self,
         urls: List[str],
         wait: Optional[float] = 0.5,
-        randowait: Optional[tuple] = None,
+        randowait: Optional[tuple] = None
     ) -> None:
+        """
+            Gets any list of URLs containing content provided the URL is accessible. 
+        """
         for url in urls:
             self.driver.get(url)
             if randowait:

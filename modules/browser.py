@@ -31,7 +31,7 @@ LINUX_PROXY_SERVER_PATH = (
 )
 
 
-class FireFoxBrowser:
+class FireFoxBrowser: # TODO: add baseclass for browser
     def __init__(
         self,
         host_type: Optional[str] = "windows" if os.name == "nt" else "linux",

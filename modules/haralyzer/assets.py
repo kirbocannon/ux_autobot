@@ -435,6 +435,7 @@ class HarPage:
         http_version: str = None,
         load_time__gt: int = None,
         receive_time__gt: int = None,
+        content_size: int = None,
         regex: bool = True,
     ) -> List["HarEntry"]:
         # pylint: disable=R0913,W0105
@@ -500,6 +501,8 @@ class HarPage:
                 receive_time__gt is not None
                 and entry.timings["receive"] < receive_time__gt
             ):
+                valid_entry = False
+            if content_size is not None and  content_size > entry.response.bodySize:                
                 valid_entry = False
 
             if valid_entry:
