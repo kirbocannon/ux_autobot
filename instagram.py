@@ -20,12 +20,16 @@ from modules.apptests.instagram import BaseTest, InstagramTest
 
 from modules.haralyzer.assets import HarParser, HarPage
 
+from utils.applogger import apptest_logger as logger
+
 PATH = get_abs_path(__file__)
 TEST_DATA_PATH = f"{PATH}/modules/apptests/data/instagram"
 
 CFG = load_yaml(f"{PATH}/config.yaml")
 GLOBAL_DL_THREHOLD = CFG["global"]["download_threshold"]
 ENABLE_QUIC = CFG["global"]["enable_quic"]
+
+HOUR_IN_SECONDS = 3600
 
 
 def run(minutes_browsing):
@@ -150,7 +154,13 @@ def generate_repeatable_test_urls(page):
 
 if __name__ == "__main__":
     # Randomized Test
-    _ = main()
+    for _ in range(100000):
+        try:
+            _ = main()
+        except Exception:
+            logger.debug("Exception running test. Did not run test for this time slot")
+            
+        time.sleep(HOUR_IN_SECONDS / 4)
 
     # # testing
     # with open(f"{TEST_DATA_PATH}/urls.json", 'r') as f:
