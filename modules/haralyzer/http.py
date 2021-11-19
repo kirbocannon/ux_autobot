@@ -247,7 +247,7 @@ class Response(HttpTransaction):
         :return: Mime Type of response
         :rtype: str
         """
-        return self.raw_entry["content"]["mimeType"]
+        return self.raw_entry["content"].get("mimeType", "")
 
     @cached_property
     def text(self) -> str:

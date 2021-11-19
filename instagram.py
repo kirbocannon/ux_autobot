@@ -25,30 +25,44 @@ TEST_DATA_PATH = f"{PATH}/modules/apptests/data/instagram"
 
 CFG = load_yaml(f"{PATH}/config.yaml")
 GLOBAL_DL_THREHOLD = CFG["global"]["download_threshold"]
+ENABLE_QUIC = CFG["global"]["enable_quic"]
 
 
 def run(minutes_browsing):
     ig_cfg = CFG["websites"]["thegram"]
 
     timestamp = time.time()
+    har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
-    with FireFoxBrowser() as browser:
+    with FireFoxBrowser(har_filename=har_filename) as browser:
         ig = InstagramTest(
             username=ig_cfg["username"],
             password=ig_cfg["password"],
             driver=browser.driver,
+            autologin=False
         )
-        ig.browse_hashtag(hashtag="cars", duration=minutes_browsing)
+        ig.get_content(["https://google.com"], wait=10)
 
-    har_saved_results = save_har(
-        location=PATH, data=browser.har, timestamp=timestamp, prefix="instagram"
-    )
+        caw = ig.driver.execute_script(
+            f"""
+                HAR.triggerExport().then(harFile => {{
+                    let bb = new Blob([JSON.stringify({{log: harFile}}) ], {{ type: 'application/json' }});
+                    let a = document.createElement('a');
+                    a.download = '{har_filename}.har';
+                    a.href = window.URL.createObjectURL(bb);
+                    a.click();
+                }});
+            """)
 
-    return dict(timestamp=timestamp, har_filename=har_saved_results["filename"])
+        time.sleep(400)
+
+        #ig.browse_hashtag(hashtag="cars", duration=minutes_browsing)
+
+    return dict(timestamp=timestamp, har_filename=har_filename)
 
 
 def analyze_harfile(har_filename, dl_threshold, save_urls=False):
-    with open(f"hars/{har_filename}", "r") as f:
+    with open(f"hars/{har_filename}.har", "r") as f:
         har_parser = HarParser(json.loads(f.read()))
         first_start_time = None
         interesting_entries = []
@@ -64,6 +78,7 @@ def analyze_harfile(har_filename, dl_threshold, save_urls=False):
             )
             num_entries = len(entries)
             first_start_time = entries[0].startTime if num_entries else None
+            print(f"Analyzed har file: {har_filename!r}.har")
             for entry in entries:
                 interesting_entries.append(entry)
                 print(
@@ -72,7 +87,7 @@ def analyze_harfile(har_filename, dl_threshold, save_urls=False):
 
         print(f"First download time of image/video content {first_start_time}")
         print(
-            f"Images and Videos downloaded above {dl_threshold} milliseconds {num_entries}"
+            f"Number of Images and Videos downloaded above {dl_threshold} milliseconds {num_entries}"
         )
 
         total_images_download_size = convert_bytes(page.image_size)
@@ -113,6 +128,7 @@ def analyze_harfile(har_filename, dl_threshold, save_urls=False):
 
 def main():
     results = run(minutes_browsing=CFG["global"]["browsing_minutes"])
+
     har_filename = results["har_filename"]
     report_entry = analyze_harfile(
         har_filename=f"{har_filename}", dl_threshold=GLOBAL_DL_THREHOLD, save_urls=True
@@ -146,24 +162,12 @@ def generate_repeatable_test_urls(page):
 
 if __name__ == "__main__":
     # Randomized Test
-    #_ = main()
+    _ = main()
 
-    # repeatable test
-    #creds = load_yaml(f"{PATH}/config.yaml")["websites"]["thegram"]
-    with open('modules/apptests/data/instagram/urls.json') as f:
-        urls = json.load(f)
 
-    with FireFoxBrowser() as browser:
-        timestamp = time.time()
-        basic = BaseTest(driver=browser.driver)
-        basic.get_content(urls[-10:], wait=3)
-        
-    har_saved_results = save_har(
-        location=PATH, data=browser.har, timestamp=timestamp, prefix="instagram-static-urls"
-    )
-
-    report_entry = analyze_harfile(har_saved_results["filename"], 1, save_urls=False)
+    # # test existing hars
+    # report_entry = analyze_harfile("instagram_1637207033.3061614-http3", 1, save_urls=False)
+    # dump_report(
+    #     report_entry=report_entry['report'], root_path=PATH, dl_threshold=1
+    # )
     
-    dump_report(
-        report_entry=report_entry['report'], root_path=PATH, dl_threshold=1
-    )

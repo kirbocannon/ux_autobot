@@ -498,7 +498,7 @@ class HarPage:
             if load_time__gt is not None and entry.time < load_time__gt:
                 valid_entry = False
             if (
-                receive_time__gt is not None
+                receive_time__gt is not None and entry.timings.get("receive")
                 and entry.timings["receive"] < receive_time__gt
             ):
                 valid_entry = False
@@ -1098,7 +1098,7 @@ class HarEntry(MimicDict):
         :return: IP Address of the server
         :rtype: str
         """
-        return self.raw_entry["serverIPAddress"]
+        return self.raw_entry.get("serverIPAddress", "unknown")
 
     @cached_property
     def status(self) -> int:
