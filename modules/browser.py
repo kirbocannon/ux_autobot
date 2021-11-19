@@ -103,10 +103,23 @@ class FireFoxBrowser: # TODO: add baseclass for browser
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         apptest_logger.debug(f"{exc_type} | {exc_val} | {exc_tb}")
-        #self.har = self.proxy.har
-        #self.proxy_server.stop(),
+
+        # request HAR file
+        self.driver.execute_script(
+            f"""
+                HAR.triggerExport().then(harFile => {{
+                    let bb = new Blob([JSON.stringify({{log: harFile}}) ], {{ type: 'application/json' }});
+                    let a = document.createElement('a');
+                    a.download = '{self.har_filename}.har';
+                    a.href = window.URL.createObjectURL(bb);
+                    a.click();
+                }});
+            """)
+
+        # wait a bit for cleanup
+        time.sleep(60)
+
         self.driver.quit()
-        #_ = kill_existing_proc(self._procs_to_kill, self.process_kill_wait)
         return True
 
     def _build_options(self):

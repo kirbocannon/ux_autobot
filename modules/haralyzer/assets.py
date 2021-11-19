@@ -505,6 +505,10 @@ class HarPage:
             if content_size is not None and  content_size > entry.response.bodySize:                
                 valid_entry = False
 
+            # If no receive time, this isn't a valid entry TODO: ugly
+            if not entry.timings.get("receive"): 
+                valid_entry = False
+
             if valid_entry:
                 results.append(entry)
 

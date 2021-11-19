@@ -39,24 +39,12 @@ def run(minutes_browsing):
             username=ig_cfg["username"],
             password=ig_cfg["password"],
             driver=browser.driver,
-            autologin=False
+            autologin=True
         )
-        ig.get_content(["https://google.com"], wait=10)
-
-        caw = ig.driver.execute_script(
-            f"""
-                HAR.triggerExport().then(harFile => {{
-                    let bb = new Blob([JSON.stringify({{log: harFile}}) ], {{ type: 'application/json' }});
-                    let a = document.createElement('a');
-                    a.download = '{har_filename}.har';
-                    a.href = window.URL.createObjectURL(bb);
-                    a.click();
-                }});
-            """)
-
-        time.sleep(400)
-
-        #ig.browse_hashtag(hashtag="cars", duration=minutes_browsing)
+        
+        #ig.get_content(urls[-5:], wait=10)
+        #ig.get_content(["https://google.com"], wait=10)
+        ig.browse_hashtag(hashtag="cars", duration=minutes_browsing)
 
     return dict(timestamp=timestamp, har_filename=har_filename)
 
@@ -164,10 +152,13 @@ if __name__ == "__main__":
     # Randomized Test
     _ = main()
 
+    # # testing
+    # with open(f"{TEST_DATA_PATH}/urls.json", 'r') as f:
+    #     urls = json.load(f)
 
     # # test existing hars
-    # report_entry = analyze_harfile("instagram_1637207033.3061614-http3", 1, save_urls=False)
+    # report_entry = analyze_harfile("instagram_1637287209.8400621-http3", 10, save_urls=False)
     # dump_report(
-    #     report_entry=report_entry['report'], root_path=PATH, dl_threshold=1
+    #     report_entry=report_entry['report'], root_path=PATH, dl_threshold=10
     # )
     
