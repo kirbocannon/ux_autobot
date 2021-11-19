@@ -48,7 +48,7 @@ class InstagramTest(BaseTest):
 
         credentials_submit.click()
 
-        time.sleep(20)
+        time.sleep(60)
 
         return True
 
