@@ -38,8 +38,6 @@ class FireFoxBrowser: # TODO: add baseclass for browser
     def __init__(
         self,
         host_type: Optional[str] = "windows" if os.name == "nt" else "linux",
-        #proxy_server_port: Optional[int] = 9091,
-        #proxy_server_path: Optional[str] = None,
         webdriver_path: Optional[str] = "drivers/geckodriver",
         process_kill_wait: Optional[int] = 5,
         har_session_name: Optional[str] = "networkanalysis",
@@ -64,9 +62,6 @@ class FireFoxBrowser: # TODO: add baseclass for browser
             self._procs_to_kill = LINUX_PROCS_TO_KILL
 
         self.profile = webdriver.FirefoxProfile()
-        #self.proxy_server_port = proxy_server_port
-        #self.proxy_server = None
-        #self.proxy = None
         self.driver = None
         self.process_kill_wait = process_kill_wait
         self.webdriver_path = webdriver_path
@@ -81,11 +76,6 @@ class FireFoxBrowser: # TODO: add baseclass for browser
     def __enter__(self):
         self._build_options()
         kill_existing_proc(self._procs_to_kill, self.process_kill_wait)
-        # self.proxy_server = Server(
-        #     self.proxy_server_path, options=dict(port=self.proxy_server_port)
-        # )
-        # self.proxy_server.start()
-        # self.proxy = self.proxy_server.create_proxy(params={"trustAllServers": "true"})
         self._build_profile()
         self.driver = webdriver.Firefox(
             executable_path=self.webdriver_path, 
@@ -93,12 +83,9 @@ class FireFoxBrowser: # TODO: add baseclass for browser
             options=self.options
         )
         self.driver.install_addon(self.har_extension_path, temporary=True)
-        
+
         # # Add HAR capture extension
         self.driver.firefox_profile.add_extension(extension=self.har_extension_path)
-
-        #self.proxy.new_har(self.har_session_name)
-
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -142,12 +129,6 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         return
         
     def _build_profile(self):
-        # self.profile.set_preference("network.proxy.type", 1)
-        # self.profile.set_preference("network.proxy.http", "localhost")
-        # self.profile.set_preference("network.proxy.http_port", self.proxy.port)
-        # self.profile.set_preference("network.proxy.ssl", "localhost")
-        # self.profile.set_preference("network.proxy.ssl_port", self.proxy.port)
-
         # QUIC Settings
         self.profile.set_preference("http3", self.enable_quic)
         self.profile.set_preference("network.http.http3.enabled", self.enable_quic)
@@ -158,14 +139,10 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         self.profile.set_preference("browser.cache.check_doc_frequency", 1)
 
         # enable automatic HAR file export
-        #self.profile.set_preference("devtools.netmonitor.har.enableAutoExportToFile", True)
-        #self.profile.set_preference("devtools.netmonitor.har.defaultFileName", self.har_filename)
         self.profile.set_preference("devtools.netmonitor.har.defaultLogDir", self.har_location)
         self.profile.set_preference("devtools.netmonitor.har.includeResponseBodies", False)
         self.profile.set_preference("devtools.netmonitor.har.forceExport", True)
         self.profile.set_preference("extensions.netmonitor.har.enableAutomation", True)
-        #self.profile.set_preference("devtools.netmonitor.enabled", True)
-        #self.profile.set_preference("extensions.netmonitor.har.autoConnect", True)
         self.profile.set_preference("extensions.netmonitor.har.contentAPIToken", "test") # Har trigger by script injected into page
         self.profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/json")
         self.profile.set_preference("browser.download.folderList", 2)

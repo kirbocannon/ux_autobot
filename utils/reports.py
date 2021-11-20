@@ -73,7 +73,7 @@ class ReportEntry:
 
 
 def dump_report(
-    report_entry: ReportEntry, root_path: str, dl_threshold: int
+    browsing_time: int, report_entry: ReportEntry, root_path: str, dl_threshold: int
 ) -> None:  # TODO: make more reusable
     """
     Dumps report to reports/ as a txt file and also creates a csv
@@ -88,6 +88,7 @@ def dump_report(
     output = f"""
     --------------------------------------------------------------------------------
     Report for {report_entry.har_filename!r} analyzed at @ {now}
+    Browsed for {browsing_time} minute(s)
     First download time of image/video content {report_entry.first_start_time} (Only includes files over threshold)
     Images and Videos downloaded above threshold: {report_entry.num_entries}
     {report_entry.overall_image_stats["image_files"]} ({report_entry.overall_image_stats["total_image_size"]}) images downloaded in {report_entry.overall_image_stats["total_image_load_time"]} seconds

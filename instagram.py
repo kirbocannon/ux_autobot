@@ -53,7 +53,7 @@ def run(minutes_browsing):
     return dict(timestamp=timestamp, har_filename=har_filename)
 
 
-def analyze_harfile(har_filename, dl_threshold, save_urls=False):
+def analyze_harfile(har_filename, browsing_time, dl_threshold, save_urls=False):
     with open(f"hars/{har_filename}.har", "r") as f:
         har_parser = HarParser(json.loads(f.read()))
         first_start_time = None
@@ -71,6 +71,7 @@ def analyze_harfile(har_filename, dl_threshold, save_urls=False):
             num_entries = len(entries)
             first_start_time = entries[0].startTime if num_entries else None
             print(f"Analyzed har file: {har_filename!r}.har")
+            print(f"Browsed for {browsing_time} minute(s)")
             for entry in entries:
                 interesting_entries.append(entry)
                 print(
@@ -123,10 +124,10 @@ def main():
 
     har_filename = results["har_filename"]
     report_entry = analyze_harfile(
-        har_filename=f"{har_filename}", dl_threshold=GLOBAL_DL_THREHOLD, save_urls=True
+        har_filename=f"{har_filename}", browsing_time=CFG["global"]["browsing_minutes"], dl_threshold=GLOBAL_DL_THREHOLD, save_urls=True
     )
     dump_report(
-        report_entry=report_entry['report'], root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
+        CFG["global"]["browsing_minutes"], report_entry=report_entry['report'], root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
     )
 
 
@@ -167,8 +168,8 @@ if __name__ == "__main__":
     #     urls = json.load(f)
 
     # # test existing hars
-    # report_entry = analyze_harfile("instagram_1637287209.8400621-http3", 10, save_urls=False)
+    # report_entry = analyze_harfile(har_filename="instagram_1637287209.8400621-http3", browsing_time=CFG["global"]["browsing_minutes"], 10, save_urls=False)
     # dump_report(
-    #     report_entry=report_entry['report'], root_path=PATH, dl_threshold=10
+    #     CFG["global"]["browsing_minutes"], report_entry=report_entry['report'], root_path=PATH, dl_threshold=10
     # )
     

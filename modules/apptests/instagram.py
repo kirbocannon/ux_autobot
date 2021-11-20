@@ -33,7 +33,7 @@ class InstagramTest(BaseTest):
         self.driver.get(self.base_url)
         time.sleep(10)  # TODO: Start randomizing time sleeps
 
-        username = self.driver.find_element(By.XPATH, "//*[@name='username']")
+        username = self.driver.find_element(By.XPATH, "//*[@name='username']") # TODO: Major error handling with context manager/etc
         password = self.driver.find_element(By.XPATH, "//*[@name='password']")
         credentials_submit = self.driver.find_element(By.XPATH, "//*[@type='submit']")
 
@@ -84,7 +84,9 @@ class InstagramTest(BaseTest):
         if not randowait:
             wait = 0.3
 
-        # lookup #animals
+        time.sleep(20)
+
+        # lookup a hashtag
         searchbox = self.driver.find_element(
             By.CSS_SELECTOR, "input[placeholder='Search']"
         )
