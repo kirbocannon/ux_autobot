@@ -1,6 +1,7 @@
 import os
 import csv
 from typing import List, Optional
+from statistics import mean
 from datetime import datetime
 from utils.metrics import ms_to_s, convert_bytes, remove_size_suffix, gb_to_mb
 from utils.applogger import report_logger
@@ -20,6 +21,7 @@ class ReportEntry:
         self.page = page
         self.overall_image_stats = self._get_overall_image_stats()
         self.overall_video_stats = self._get_overall_video_stats()
+        self.overall_score = self._get_overall_score()
         self.entry_stats = self._get_entry_stats()
         self.har_filename = har_filename
 
@@ -56,6 +58,17 @@ class ReportEntry:
             else 0,
         )
 
+    def _get_overall_score(self) -> float:
+        if self.overall_image_stats["score"] and self.overall_video_stats["score"]:
+            overall_score = mean([self.overall_image_stats["score"], self.overall_video_stats["score"]])
+        elif self.overall_image_stats["score"] and not self.overall_video_stats["score"]:
+            overall_score = self.overall_image_stats["score"]
+        elif self.overall_video_stats["score"] and not self.overall_image_stats["score"]:
+            overall_score = self.overall_image_stats["score"]
+        else:
+            overall_score = 0
+        return overall_score
+
     def _get_entry_stats(self) -> List[dict]:
         l = []
         for entry in self.interesting_entries:
@@ -85,6 +98,8 @@ def dump_report(
     for har_entry in report_entry.interesting_entries:
         har_entry_stats += f"\t\t{har_entry.startTime} - Downloaded {har_entry.response.mimeType!r} ({convert_bytes(har_entry.response.bodySize)}) in {ms_to_s(har_entry.timings['receive'])} seconds from {har_entry.response.url.split('https://')[1].split('/')[0]} ({har_entry.serverAddress})\n"
 
+    
+
     output = f"""
     --------------------------------------------------------------------------------
     Report for {report_entry.har_filename!r} analyzed at @ {now}
@@ -93,9 +108,11 @@ def dump_report(
     Images and Videos downloaded above threshold: {report_entry.num_entries}
     {report_entry.overall_image_stats["image_files"]} ({report_entry.overall_image_stats["total_image_size"]}) images downloaded in {report_entry.overall_image_stats["total_image_load_time"]} seconds
     {report_entry.overall_video_stats["video_files"]} ({report_entry.overall_video_stats["total_video_size"]}) videos downloaded in {report_entry.overall_video_stats["total_video_load_time"]} seconds
-    Score {report_entry.overall_image_stats["score"]}
+    Images Score {report_entry.overall_image_stats["score"]}
+    Videos Score {report_entry.overall_video_stats["score"]}
+    Overall Score {report_entry.overall_score}
 
-    Har entries that exceeded the download duration threshold of {dl_threshold / 1000} second(s): \n{har_entry_stats}
+    Har entries that exceeded the download duration threshold of {dl_threshold} second(s): \n{har_entry_stats}
     --------------------------------------------------------------------------------
     """
     report_logger.debug(output)
@@ -113,7 +130,9 @@ def dump_report(
         "video_count",
         "total_video_size",
         "total_video_load_time",
-        "score",
+        "images_score",
+        "videos_score",
+        "overall_score"
     ]
     with open(csv_filename, "a+") as f:
         dw = csv.DictWriter(
@@ -141,7 +160,9 @@ def dump_report(
                 "total_video_load_time": report_entry.overall_video_stats[
                     "total_video_load_time"
                 ],
-                "score": report_entry.overall_image_stats["score"],
+                "images_score": report_entry.overall_image_stats["score"],
+                "videos_score": report_entry.overall_video_stats["score"],
+                "overall_score": report_entry.overall_score
             }
         )
 

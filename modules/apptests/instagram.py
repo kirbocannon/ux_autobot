@@ -5,6 +5,10 @@ from copy import copy
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions
+
+from selenium.common.exceptions import TimeoutException
 
 from modules.browser import scrolldown, scrollup
 
@@ -20,11 +24,15 @@ class InstagramTest(BaseTest):
         password: str,
         driver: webdriver,
         autologin: Optional[bool] = True,
+        default_element_timeout: Optional[int] = 10,
+        searchbox_translation: Optional[str] = "Search"
     ):
         self.base_url = "https://www.instagram.com"
         self.username = username
         self.password = password
         self.driver = driver
+        self.default_element_timeout = default_element_timeout
+        self.searchbox_translation = searchbox_translation
         super().__init__(driver)
         if autologin:
             self.login()
@@ -48,9 +56,26 @@ class InstagramTest(BaseTest):
 
         credentials_submit.click()
 
-        time.sleep(60)
+        time.sleep(5) # TODO: increase, eventually get smarter here
 
         return True
+
+    def _input_ig_searchbox(self, word: str, placeholder: str) -> None:
+        """
+            Lookup hashtag, keyboard, or handle
+        """
+         
+        searchbox = self.driver.find_element(
+            By.CSS_SELECTOR, f"input[placeholder='{placeholder}']"
+        )
+        searchbox.clear()
+        searchbox.send_keys(word)
+        time.sleep(2)
+        searchbox.send_keys(Keys.ENTER)
+        time.sleep(2)
+        searchbox.send_keys(Keys.ENTER)
+        time.sleep(5)
+        return
 
     def browse_hashtag(
         self,
@@ -87,16 +112,7 @@ class InstagramTest(BaseTest):
         time.sleep(20)
 
         # lookup a hashtag
-        searchbox = self.driver.find_element(
-            By.CSS_SELECTOR, "input[placeholder='Search']"
-        )
-        searchbox.clear()
-        searchbox.send_keys(f"#{hashtag}")
-        time.sleep(2)
-        searchbox.send_keys(Keys.ENTER)
-        time.sleep(2)
-        searchbox.send_keys(Keys.ENTER)
-        time.sleep(5)
+        self._input_ig_searchbox(word=hashtag, placeholder=self.searchbox_translation)
 
         # TODO: prob create decorator function for the timeout
         start_time = time.time()
@@ -138,3 +154,35 @@ class InstagramTest(BaseTest):
                 start_time_relative_after_timer = start_time_relative_after_timer + 60
 
         return
+
+    def browse_stories(self, handle: str, duration: int, element_timeout: Optional[int] = None) -> None:
+        """
+            Browses an Instagramer's saved stories by selecting the first one available under the placement
+            div. Stories should continue to play without any additional interaction. The browsing will 
+            end after the specified duration. 
+        """
+    
+        # search for instagram handle
+        self._input_ig_searchbox(word=handle, placeholder=self.searchbox_translation)
+
+        if not element_timeout:
+            element_timeout = self.default_element_timeout
+
+        time.sleep(10)
+
+        # wait for presentation div to load, and subsequently the first story
+        presentation = WebDriverWait(self.driver, element_timeout).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[role='presentation']")))
+        first_story = WebDriverWait(presentation, element_timeout).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[role='button']")))
+        
+        # click on the first story (the reset should follow)
+        first_story.click()
+
+        # wait for some period of time and let the stories roll...
+        time.sleep(duration)
+
+        return
+
+
+
+
+        

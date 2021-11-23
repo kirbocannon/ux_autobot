@@ -89,9 +89,10 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        apptest_logger.debug(f"{exc_type} | {exc_val} | {exc_tb}")
+        if (exc_type or exc_val or exc_tb):
+            apptest_logger.debug(f"{exc_type} | {exc_val} | {exc_tb}")
 
-        # request HAR file
+        # inject javascript to request HAR file
         self.driver.execute_script(
             f"""
                 HAR.triggerExport().then(harFile => {{
@@ -104,7 +105,7 @@ class FireFoxBrowser: # TODO: add baseclass for browser
             """)
 
         # wait a bit for cleanup
-        time.sleep(60)
+        time.sleep(10) # TODO: Change back to 60 
 
         self.driver.quit()
         return True

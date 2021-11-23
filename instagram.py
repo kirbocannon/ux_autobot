@@ -2,6 +2,9 @@ import os
 import time
 import json
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from datetime import datetime
 
 from utils.applogger import apptest_logger, report_logger
@@ -22,51 +25,137 @@ from modules.haralyzer.assets import HarParser, HarPage
 
 from utils.applogger import apptest_logger as logger
 
+from statistics import mean
+
+
 PATH = get_abs_path(__file__)
 TEST_DATA_PATH = f"{PATH}/modules/apptests/data/instagram"
 
 CFG = load_yaml(f"{PATH}/config.yaml")
 GLOBAL_DL_THREHOLD = CFG["global"]["download_threshold"]
 ENABLE_QUIC = CFG["global"]["enable_quic"]
+LANGUAGE = CFG["language"]
 
 HOUR_IN_SECONDS = 3600
 
 
-def run(minutes_browsing):
+def story_browsing(handle, minutes_browsing):
     ig_cfg = CFG["websites"]["thegram"]
 
     timestamp = time.time()
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
-    with FireFoxBrowser(har_filename=har_filename) as browser:
+    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC) as browser:
         ig = InstagramTest(
             username=ig_cfg["username"],
             password=ig_cfg["password"],
             driver=browser.driver,
-            autologin=True
+            autologin=True,
+            default_element_timeout=20,
+            searchbox_translation=LANGUAGE["component"]["searchbox"][LANGUAGE["selected"]]
+        )
+        
+        ig.browse_stories(handle=handle, duration=minutes_browsing)
+
+    # generate report
+    report_entry = analyze_harfile(har_filename=har_filename, browsing_time=CFG["global"]["browsing_minutes"], dl_threshold=4500, save_urls=False)
+
+    if report_entry["report"]:
+        dump_report(
+            CFG["global"]["browsing_minutes"], report_entry=report_entry['report'], root_path=PATH, dl_threshold=4500
+        )
+
+    return
+
+def hashtag_browsing(hashtag, minutes_browsing):
+
+    ig_cfg = CFG["websites"]["thegram"]
+
+    timestamp = time.time()
+    har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
+
+    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC) as browser:
+        ig = InstagramTest(
+            username=ig_cfg["username"],
+            password=ig_cfg["password"],
+            driver=browser.driver,
+            autologin=True,
+            searchbox_translation=LANGUAGE["component"]["searchbox"][LANGUAGE["selected"]]
         )
         
         #ig.get_content(urls[-5:], wait=10)
         #ig.get_content(["https://google.com"], wait=10)
-        ig.browse_hashtag(hashtag="cars", duration=minutes_browsing)
+        ig.browse_hashtag(hashtag=hashtag, duration=minutes_browsing)
+
+    report_entry = analyze_harfile(
+        har_filename=f"{har_filename}", browsing_time=minutes_browsing, dl_threshold=GLOBAL_DL_THREHOLD, save_urls=True
+    )
+    dump_report(
+        minutes_browsing, report_entry=report_entry['report'], root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
+    )
 
     return dict(timestamp=timestamp, har_filename=har_filename)
 
 
-def analyze_harfile(har_filename, browsing_time, dl_threshold, save_urls=False):
+def visualize_harfile(har_filenames, figure_id):
+
+    for idx, har_filename in enumerate(hars):
+
+        with open(f"hars/{har_filename}.har", "r") as f:
+            har_parser = HarParser(json.loads(f.read()))
+            first_start_time = None
+            interesting_entries = []
+            for (
+                page
+            ) in (
+                har_parser.pages
+            ):  # TODO: this function only supports one page really, this doesn't make a lot of sense
+                entries = page.filter_entries(
+                    content_type="(image|video)",
+                    status_code="200",
+                )
+                # for entry in entries:
+                #     print(
+                #         f"{entry.startTime} - Downloaded {entry.response.mimeType!r} ({convert_bytes(entry.response.bodySize)}) in {ms_to_s(entry.timings['receive'])} seconds from {entry.response.url.split('https://')[1].split('/')[0]} ({entry.serverAddress})"
+                #     )
+
+            total_images_download_size = convert_bytes(page.image_size)
+            total_images_load_time = ms_to_s(page.image_load_time)
+
+            y = np.array([ms_to_s(entry.timings['receive']) for entry in entries])
+            x = np.array([entry.startTime for entry in entries])
+
+            p = plt.figure(idx + 1)
+
+            # set labels
+            plt.title(f"{har_filename!r} Downloaded: {total_images_download_size} Total Time: {total_images_load_time}s")
+            plt.xlabel("start time")
+            plt.ylabel("receive time (seconds)")
+
+            # draw plot
+            plt.plot(x, y)
+
+            print(total_images_download_size, total_images_load_time)
+
+            plt.show()
+
+
+def analyze_harfile(har_filename, browsing_time, dl_threshold, save_urls=False, content_type="(image|video|media|mp4)"): # TODO: make more modular. method in instagramtest class?
     with open(f"hars/{har_filename}.har", "r") as f:
         har_parser = HarParser(json.loads(f.read()))
         first_start_time = None
         interesting_entries = []
+        num_entries = 0
+        page = None
         for (
             page
         ) in (
             har_parser.pages
         ):  # TODO: this function only supports one page really, this doesn't make a lot of sense
             entries = page.filter_entries(
-                content_type="(image|video)",
+                content_type=content_type,
                 receive_time__gt=dl_threshold,
-                status_code="200",
+                status_code="(200|206)",
             )
             num_entries = len(entries)
             first_start_time = entries[0].startTime if num_entries else None
@@ -83,10 +172,13 @@ def analyze_harfile(har_filename, browsing_time, dl_threshold, save_urls=False):
             f"Number of Images and Videos downloaded above {dl_threshold} milliseconds {num_entries}"
         )
 
-        total_images_download_size = convert_bytes(page.image_size)
-        total_images_load_time = ms_to_s(page.image_load_time)
+        total_images_download_size = convert_bytes(page.image_size) if page else 0
+        total_images_load_time = ms_to_s(page.image_load_time) if page else 0
+        total_videos_download_size = convert_bytes(page.video_size) if page else 0
+        total_videos_load_time = ms_to_s(page.video_load_time) if page else 0
+
         try:
-            score = round(
+            images_score = round(
                 10.0
                 - (
                     total_images_load_time
@@ -98,37 +190,61 @@ def analyze_harfile(har_filename, browsing_time, dl_threshold, save_urls=False):
                 ),
                 2,
             )  # TODO: hacky but OK for now
-        except ZeroDivisionError:
-            score = 0
 
-        print(
-            f"{len(page.image_files)} ({total_images_download_size}) images downloaded in {total_images_load_time} second(s). Score {score}"
+        except (ZeroDivisionError, TypeError):
+            images_score = 0
+
+        try:
+            videos_score = round(
+                10.0
+                - (
+                    total_videos_load_time
+                    / remove_size_suffix(
+                        gb_to_mb(total_videos_download_size)
+                        if "G" in total_videos_download_size
+                        else total_videos_download_size
+                    )
+                ),
+                2,
+            )  # TODO: hacky but OK for now
+        except (ZeroDivisionError, TypeError):
+            videos_score = 0
+
+        if images_score and videos_score:
+            overall_score = mean([images_score, videos_score])
+        
+        elif images_score and not videos_score:
+            overall_score = images_score
+        
+        elif videos_score and not images_score:
+            overall_score = videos_score 
+
+        if page:
+
+            print(f"Total Load time: {ms_to_s(page.get_load_time(content_type=content_type))}s")
+        
+            print(f"{len(page.video_files)} ({total_videos_download_size}) videos downloaded in {total_videos_load_time}")
+
+            print(
+                f"{len(page.image_files)} ({total_images_download_size}) images downloaded in {total_images_load_time} second(s). Images Score {images_score}. Videos Score {videos_score}"
+            )
+            print(f"Overall Score: {overall_score}")
+
+
+    if page:
+        report_entry = ReportEntry(
+            page, interesting_entries, first_start_time, har_filename
         )
 
-        print(f"Total Load time: {ms_to_s(page.get_load_time(content_type='(image|video)'))}s")
-
-    report_entry = ReportEntry(
-        page, interesting_entries, first_start_time, har_filename
-    )
-
-    dl_urls = generate_repeatable_test_urls(page) if save_urls else []
+        dl_urls = generate_repeatable_test_urls(page) if save_urls else []
+    else:
+        report_entry = None
+        dl_urls = None
     
     return dict(
         report=report_entry, 
         dl_urls=dl_urls
         )
-
-
-def main():
-    results = run(minutes_browsing=CFG["global"]["browsing_minutes"])
-
-    har_filename = results["har_filename"]
-    report_entry = analyze_harfile(
-        har_filename=f"{har_filename}", browsing_time=CFG["global"]["browsing_minutes"], dl_threshold=GLOBAL_DL_THREHOLD, save_urls=True
-    )
-    dump_report(
-        CFG["global"]["browsing_minutes"], report_entry=report_entry['report'], root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
-    )
 
 
 def generate_repeatable_test_urls(page):
@@ -157,19 +273,9 @@ if __name__ == "__main__":
     # Randomized Test
     for _ in range(100000):
         try:
-            _ = main()
+            #_ = hashtag_browsing(hashtag="cars", minutes_browsing=.1)
+            _ = story_browsing(handle="thekingofdiet", minutes_browsing=.1)
         except Exception:
             logger.debug("Exception running test. Did not run test for this time slot")
             
         time.sleep(HOUR_IN_SECONDS / 4)
-
-    # # testing
-    # with open(f"{TEST_DATA_PATH}/urls.json", 'r') as f:
-    #     urls = json.load(f)
-
-    # # test existing hars
-    # report_entry = analyze_harfile(har_filename="instagram_1637287209.8400621-http3", browsing_time=CFG["global"]["browsing_minutes"], 10, save_urls=False)
-    # dump_report(
-    #     CFG["global"]["browsing_minutes"], report_entry=report_entry['report'], root_path=PATH, dl_threshold=10
-    # )
-    
