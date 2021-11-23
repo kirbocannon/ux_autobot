@@ -181,8 +181,3 @@ class InstagramTest(BaseTest):
         time.sleep(duration)
 
         return
-
-
-
-
-        

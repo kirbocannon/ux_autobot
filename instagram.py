@@ -39,7 +39,7 @@ LANGUAGE = CFG["language"]
 HOUR_IN_SECONDS = 3600
 
 
-def story_browsing(handle, minutes_browsing):
+def story_browsing(handle, duration):
     ig_cfg = CFG["websites"]["thegram"]
 
     timestamp = time.time()
@@ -55,19 +55,19 @@ def story_browsing(handle, minutes_browsing):
             searchbox_translation=LANGUAGE["component"]["searchbox"][LANGUAGE["selected"]]
         )
         
-        ig.browse_stories(handle=handle, duration=minutes_browsing)
+        ig.browse_stories(handle=handle, duration=duration)
 
     # generate report
-    report_entry = analyze_harfile(har_filename=har_filename, browsing_time=CFG["global"]["browsing_minutes"], dl_threshold=4500, save_urls=False)
+    report_entry = analyze_harfile(har_filename=har_filename, browsing_time=CFG["global"]["browsing_minutes"], dl_threshold=GLOBAL_DL_THREHOLD, save_urls=False)
 
     if report_entry["report"]:
         dump_report(
-            CFG["global"]["browsing_minutes"], report_entry=report_entry['report'], root_path=PATH, dl_threshold=4500
+            CFG["global"]["browsing_minutes"], report_entry=report_entry['report'], root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
         )
 
     return
 
-def hashtag_browsing(hashtag, minutes_browsing):
+def hashtag_browsing(hashtag, duration):
 
     ig_cfg = CFG["websites"]["thegram"]
 
@@ -85,7 +85,7 @@ def hashtag_browsing(hashtag, minutes_browsing):
         
         #ig.get_content(urls[-5:], wait=10)
         #ig.get_content(["https://google.com"], wait=10)
-        ig.browse_hashtag(hashtag=hashtag, duration=minutes_browsing)
+        ig.browse_hashtag(hashtag=hashtag, duration=duration)
 
     report_entry = analyze_harfile(
         har_filename=f"{har_filename}", browsing_time=minutes_browsing, dl_threshold=GLOBAL_DL_THREHOLD, save_urls=True
@@ -94,7 +94,7 @@ def hashtag_browsing(hashtag, minutes_browsing):
         minutes_browsing, report_entry=report_entry['report'], root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
     )
 
-    return dict(timestamp=timestamp, har_filename=har_filename)
+    return
 
 
 def visualize_harfile(har_filenames, figure_id):
@@ -273,8 +273,9 @@ if __name__ == "__main__":
     # Randomized Test
     for _ in range(100000):
         try:
-            #_ = hashtag_browsing(hashtag="cars", minutes_browsing=.1)
-            _ = story_browsing(handle="thekingofdiet", minutes_browsing=.1)
+            #_ = hashtag_browsing(hashtag="cars", duration=30)
+            _ = story_browsing(handle="thekingofdiet", duration=20)
+            break
         except Exception:
             logger.debug("Exception running test. Did not run test for this time slot")
             
