@@ -304,4 +304,3 @@ if __name__ == "__main__":
     ]
 
     visualize_harfile(hars, "video")
-    #
