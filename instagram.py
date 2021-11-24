@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import random
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,14 +42,16 @@ HOUR_IN_SECONDS = 3600
 
 def story_browsing(handle, duration):
     ig_cfg = CFG["websites"]["thegram"]
+    accounts = ig_cfg["accounts"]
+    account = random.choice(accounts)
 
     timestamp = time.time()
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
     with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC) as browser:
         ig = InstagramTest(
-            username=ig_cfg["username"],
-            password=ig_cfg["password"],
+            username=account["username"],
+            password=account["password"],
             driver=browser.driver,
             autologin=True,
             default_element_timeout=20,
@@ -97,7 +100,7 @@ def hashtag_browsing(hashtag, duration):
     return
 
 
-def visualize_harfile(har_filenames, figure_id):
+def visualize_harfile(har_filenames):
 
     for idx, har_filename in enumerate(hars):
 
@@ -111,8 +114,9 @@ def visualize_harfile(har_filenames, figure_id):
                 har_parser.pages
             ):  # TODO: this function only supports one page really, this doesn't make a lot of sense
                 entries = page.filter_entries(
-                    content_type="(image|video)",
-                    status_code="200",
+                    #content_type="image",
+                    content_type="video",
+                    status_code="(200|206)",
                 )
                 # for entry in entries:
                 #     print(
@@ -125,19 +129,29 @@ def visualize_harfile(har_filenames, figure_id):
             y = np.array([ms_to_s(entry.timings['receive']) for entry in entries])
             x = np.array([entry.startTime for entry in entries])
 
-            p = plt.figure(idx + 1)
+            p = plt.figure(num=idx + 1)
+            p.set_size_inches(18,18)
+
+
+            
 
             # set labels
-            plt.title(f"{har_filename!r} Downloaded: {total_images_download_size} Total Time: {total_images_load_time}s")
+            plt.title(f"{har_filename!r} Started: {page.startedDateTime} Downloaded: {total_images_download_size} Total Time: {total_images_load_time}s Files Downloaded: {len(entries)}")
             plt.xlabel("start time")
             plt.ylabel("receive time (seconds)")
+
+            import matplotlib.ticker as ticker
+
 
             # draw plot
             plt.plot(x, y)
 
+            # save plots
+            plt.savefig(f'plots/{har_filename}.png')
+
             print(total_images_download_size, total_images_load_time)
 
-            plt.show()
+    plt.show()
 
 
 def analyze_harfile(har_filename, browsing_time, dl_threshold, save_urls=False, content_type="(image|video|media|mp4)"): # TODO: make more modular. method in instagramtest class?
@@ -228,7 +242,7 @@ def analyze_harfile(har_filename, browsing_time, dl_threshold, save_urls=False, 
             print(
                 f"{len(page.image_files)} ({total_images_download_size}) images downloaded in {total_images_load_time} second(s). Images Score {images_score}. Videos Score {videos_score}"
             )
-            print(f"Overall Score: {overall_score}")
+            print(f"Overall Score: {round(overall_score, 2)}")
 
 
     if page:
@@ -270,13 +284,29 @@ def generate_repeatable_test_urls(page):
 
 
 if __name__ == "__main__":
-    # Randomized Test
-    for _ in range(100000):
-        try:
-            #_ = hashtag_browsing(hashtag="cars", duration=30)
-            _ = story_browsing(handle="thekingofdiet", duration=20)
-            break
-        except Exception:
-            logger.debug("Exception running test. Did not run test for this time slot")
+    # # Randomized Test
+    # for _ in range(100000):
+    #     try:
+    #         #_ = hashtag_browsing(hashtag="cars", duration=30)
+    #         _ = story_browsing(handle="thekingofdiet", duration=20)
+    #         break
+    #     except Exception:
+    #         logger.debug("Exception running test. Did not run test for this time slot")
             
-        time.sleep(HOUR_IN_SECONDS / 4)
+    #     time.sleep(HOUR_IN_SECONDS / 4)
+
+    # plot graphs
+    hars = [
+        # "mexico/instagram_1637496866.0308888-http1.1-2",
+        # "mexico/instagram_1637493578.858816-http1.1-2",
+        # "mexico/instagram_1637467435.098001-http3",
+        # "mexico/instagram_1637367507.8547738-http3",
+        # "mexico/instagram_1637366237.140393-http3",
+        # "mexico/instagram_1637470788.0675225-http3-bad",
+        # "mexico/instagram_1637519392.1339178-http1.1-2",
+        # "mexico/instagram_1637372807.855545-http3-lower-score-but-decent",
+        # "mexico/instagram_1637377749.2780142-http3-good-home-conn"
+        "mexico/instagram_1637726614.226673-http3-bad-video"
+    ]
+
+    visualize_harfile(hars)

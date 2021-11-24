@@ -146,3 +146,6 @@ reports/*.txt
 
 # config file
 config.yaml
+
+# plots
+plots/

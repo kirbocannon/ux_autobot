@@ -67,7 +67,7 @@ class ReportEntry:
             overall_score = self.overall_image_stats["score"]
         else:
             overall_score = 0
-        return overall_score
+        return round(overall_score, 2)
 
     def _get_entry_stats(self) -> List[dict]:
         l = []
