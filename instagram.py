@@ -125,28 +125,25 @@ def visualize_harfile(har_filenames, filetype):
             elif filetype == "video":
                 total_download_size = convert_bytes(page.video_size)
                 total_load_time = ms_to_s(page.video_load_time)
+            else:
+                raise Exception(f"File type {filetype!r} not recognized")
 
             y = np.array([ms_to_s(entry.timings['receive']) for entry in entries])
             x = np.array([entry.startTime for entry in entries])
 
             p = plt.figure(num=idx + 1)
-            p.set_size_inches(18,18)
+            #p.set_size_inches(18,18)
 
             # set labels
             plt.title(f"{filetype.capitalize()} - {har_filename!r} Started: {page.startedDateTime} Downloaded: {total_download_size} Total Time: {total_load_time}s Files Downloaded: {len(entries)}")
             plt.xlabel("start time")
             plt.ylabel("receive time (seconds)")
 
-            import matplotlib.ticker as ticker
-
-
             # draw plot
             plt.plot(x, y)
 
             # save plots
             plt.savefig(f'plots/{har_filename}.png')
-
-            print(total_images_download_size, total_images_load_time)
 
     plt.show()
 
@@ -306,4 +303,4 @@ if __name__ == "__main__":
         "mexico/instagram_1637726614.226673-http3-bad-video"
     ]
 
-    visualize_harfile(hars, "videos")
+    visualize_harfile(hars, "video")
