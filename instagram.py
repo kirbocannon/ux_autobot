@@ -100,7 +100,8 @@ def hashtag_browsing(hashtag, duration):
     return
 
 
-def visualize_harfile(har_filenames):
+def visualize_harfile(har_filenames, filetype):
+    filetype = filetype.lower()
 
     for idx, har_filename in enumerate(hars):
 
@@ -114,17 +115,16 @@ def visualize_harfile(har_filenames):
                 har_parser.pages
             ):  # TODO: this function only supports one page really, this doesn't make a lot of sense
                 entries = page.filter_entries(
-                    #content_type="image",
-                    content_type="video",
+                    content_type=filetype,
                     status_code="(200|206)",
                 )
-                # for entry in entries:
-                #     print(
-                #         f"{entry.startTime} - Downloaded {entry.response.mimeType!r} ({convert_bytes(entry.response.bodySize)}) in {ms_to_s(entry.timings['receive'])} seconds from {entry.response.url.split('https://')[1].split('/')[0]} ({entry.serverAddress})"
-                #     )
 
-            total_images_download_size = convert_bytes(page.image_size)
-            total_images_load_time = ms_to_s(page.image_load_time)
+            if filetype == "image":
+                total_download_size = convert_bytes(page.image_size)
+                total_load_time = ms_to_s(page.image_load_time)
+            elif filetype == "video":
+                total_download_size = convert_bytes(page.video_size)
+                total_load_time = ms_to_s(page.video_load_time)
 
             y = np.array([ms_to_s(entry.timings['receive']) for entry in entries])
             x = np.array([entry.startTime for entry in entries])
@@ -132,11 +132,8 @@ def visualize_harfile(har_filenames):
             p = plt.figure(num=idx + 1)
             p.set_size_inches(18,18)
 
-
-            
-
             # set labels
-            plt.title(f"{har_filename!r} Started: {page.startedDateTime} Downloaded: {total_images_download_size} Total Time: {total_images_load_time}s Files Downloaded: {len(entries)}")
+            plt.title(f"{filetype.capitalize()} - {har_filename!r} Started: {page.startedDateTime} Downloaded: {total_download_size} Total Time: {total_load_time}s Files Downloaded: {len(entries)}")
             plt.xlabel("start time")
             plt.ylabel("receive time (seconds)")
 
@@ -309,4 +306,4 @@ if __name__ == "__main__":
         "mexico/instagram_1637726614.226673-http3-bad-video"
     ]
 
-    visualize_harfile(hars)
+    visualize_harfile(hars, "videos")
