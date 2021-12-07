@@ -149,3 +149,5 @@ config.yaml
 
 # plots
 plots/
+
+*.txt
