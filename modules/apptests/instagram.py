@@ -64,7 +64,7 @@ class InstagramTest(BaseTest):
         """
             Lookup hashtag, keyboard, or handle
         """
-         
+        time.sleep(10) 
         searchbox = self.driver.find_element(
             By.CSS_SELECTOR, f"input[placeholder='{placeholder}']"
         )
@@ -74,7 +74,7 @@ class InstagramTest(BaseTest):
         searchbox.send_keys(Keys.ENTER)
         time.sleep(2)
         searchbox.send_keys(Keys.ENTER)
-        time.sleep(5)
+        time.sleep(10)
         return
 
     def browse_hashtag(
@@ -112,7 +112,7 @@ class InstagramTest(BaseTest):
         time.sleep(20)
 
         # lookup a hashtag
-        self._input_ig_searchbox(word=hashtag, placeholder=self.searchbox_translation)
+        self._input_ig_searchbox(word=f"#{hashtag}", placeholder=self.searchbox_translation)
 
         # TODO: prob create decorator function for the timeout
         start_time = time.time()

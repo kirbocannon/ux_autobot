@@ -40,10 +40,16 @@ LANGUAGE = CFG["language"]
 HOUR_IN_SECONDS = 3600
 
 
-def story_browsing(handle, duration):
+def choose_random_account():
     ig_cfg = CFG["websites"]["thegram"]
     accounts = ig_cfg["accounts"]
     account = random.choice(accounts)
+
+    return account
+
+
+def story_browsing(handle, duration):
+    account = choose_random_account()
 
     timestamp = time.time()
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
@@ -72,15 +78,15 @@ def story_browsing(handle, duration):
 
 def hashtag_browsing(hashtag, duration):
 
-    ig_cfg = CFG["websites"]["thegram"]
+    account = choose_random_account()
 
     timestamp = time.time()
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
     with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC) as browser:
         ig = InstagramTest(
-            username=ig_cfg["username"],
-            password=ig_cfg["password"],
+            username=account["username"],
+            password=account["password"],
             driver=browser.driver,
             autologin=True,
             searchbox_translation=LANGUAGE["component"]["searchbox"][LANGUAGE["selected"]]
@@ -91,10 +97,10 @@ def hashtag_browsing(hashtag, duration):
         ig.browse_hashtag(hashtag=hashtag, duration=duration)
 
     report_entry = analyze_harfile(
-        har_filename=f"{har_filename}", browsing_time=minutes_browsing, dl_threshold=GLOBAL_DL_THREHOLD, save_urls=True
+        har_filename=f"{har_filename}", browsing_time=duration, dl_threshold=GLOBAL_DL_THREHOLD, save_urls=True
     )
     dump_report(
-        minutes_browsing, report_entry=report_entry['report'], root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
+        duration, report_entry=report_entry['report'], root_path=PATH, dl_threshold=GLOBAL_DL_THREHOLD
     )
 
     return
@@ -289,18 +295,6 @@ if __name__ == "__main__":
             
     #     time.sleep(HOUR_IN_SECONDS / 4)
 
-    # plot graphs
-    hars = [
-        # "mexico/instagram_1637496866.0308888-http1.1-2",
-        # "mexico/instagram_1637493578.858816-http1.1-2",
-        # "mexico/instagram_1637467435.098001-http3",
-        # "mexico/instagram_1637367507.8547738-http3",
-        # "mexico/instagram_1637366237.140393-http3",
-        # "mexico/instagram_1637470788.0675225-http3-bad",
-        # "mexico/instagram_1637519392.1339178-http1.1-2",
-        # "mexico/instagram_1637372807.855545-http3-lower-score-but-decent",
-        # "mexico/instagram_1637377749.2780142-http3-good-home-conn"
-        "mexico/instagram_1637726614.226673-http3-bad-video"
-    ]
-
-    visualize_harfile(hars, "video")
+    
+    _ = hashtag_browsing(hashtag="cars", duration=.1)
+    

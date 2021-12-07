@@ -105,7 +105,7 @@ class FireFoxBrowser: # TODO: add baseclass for browser
             """)
 
         # wait a bit for cleanup
-        time.sleep(60)
+        time.sleep(20)
 
         self.driver.quit()
         return True
