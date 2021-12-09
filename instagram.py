@@ -51,7 +51,7 @@ def choose_random_account():
 def story_browsing(handle, duration):
     account = choose_random_account()
     timestamp = time.time()
-    header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-test-{timestamp}"}
+    header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-debug-{timestamp}"}
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
     with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC, header=header) as browser:
@@ -79,7 +79,7 @@ def story_browsing(handle, duration):
 def hashtag_browsing(hashtag, duration):
     account = choose_random_account()
     timestamp = time.time()
-    header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-test-{timestamp}"}
+    header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-debug-{timestamp}"}
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
     with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC, header=header) as browser:
