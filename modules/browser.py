@@ -1,8 +1,9 @@
 import os
 import time
+import json
 import logging
-from typing import Optional, List
-
+import functools
+from typing import Optional, List, Dict
 from utils.applogger import apptest_logger
 
 from selenium import webdriver
@@ -39,10 +40,10 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         extension_path: Optional[str] = None,
         extension_names: Optional[List[str]] = None,
         enable_quic: Optional[bool] = True,
-        options: Optional[List[str]] = None
+        options: Optional[List[str]] = None,
+        header: Optional[Dict[str, str]] = None
     ):
         if host_type == "windows":
-            #self.proxy_server_path = WINDOWS_PROXY_SERVER_PATH
             if not extension_path:
                 extension_path = f"{PATH_WINDOWS}\extensions\\firefox\\"
 
@@ -70,6 +71,7 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         self.har = None
         self.enable_quic = enable_quic
         self.options = options
+        self.header = header
 
     def __enter__(self):
         self._build_options()
@@ -80,17 +82,31 @@ class FireFoxBrowser: # TODO: add baseclass for browser
             firefox_profile=self.profile,
             options=self.options
         )
+
         # Add extensions here
         for extension_name in self.extension_names:
             self.driver.install_addon(self.extension_path + extension_name, temporary=True)
             self.driver.firefox_profile.add_extension(extension=self.extension_path + extension_name)
+
+        # add custom headers here
+        if self.header:
+            _ = self._insert_header(**self.header)
+
         return self
+
+    @property
+    @functools.lru_cache()
+    def _extension_mappings(self):
+        with open(f"{self.extension_path}mappings.json") as f:
+            data = f.read()
+        
+        return data
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if (exc_type or exc_val or exc_tb):
             apptest_logger.debug(f"{exc_type} | {exc_val} | {exc_tb}")
 
-        # inject javascript to request HAR file
+        # inject javascript to request HAR file, then download it automatically
         self.driver.execute_script(
             f"""
                 HAR.triggerExport().then(harFile => {{
@@ -147,20 +163,24 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         self.profile.set_preference("browser.download.folderList", 2)
 
         # Statically set uuids for base extensions TODO: (very small chance of collision, try to make dynamic in future)
-        with open(f"{self.extension_path}mappings.json") as f:
-            self.profile.set_preference("extensions.webextensions.uuids", f.read())
+        self.profile.set_preference("extensions.webextensions.uuids", self._extension_mappings)
 
         self.profile.webdriver_accept_untrusted_certs = True
         self.profile.update_preferences()
         return
 
-    def insert_header(url: str, header_key: str, header_value: str):
+    def _insert_header(self, url: str, header_key: str, header_value: str) -> None:
         """
             Inserts a header into the "Modify Header Value" extension 
             which will send a specified header key/value pair to the specified
             url for every request. This extension is installed as one of the base 
             extensions for this program. More info: https://addons.mozilla.org/en-US/firefox/addon/modify-header-value/
         """
+
+        # go to extension's option page
+        # format to get to an extension's page should be like the following: #moz-extension://2bd549f8-aeba-40db-a51c-398f96c7ec16/data/options/options.html
+        self.driver.get(f"moz-extension://{json.loads(self._extension_mappings)['jid0-oEwF5ZcskGhjFv4Kk4lYc@jetpack']}/data/options/options.html")
+
         # set url
         url_box = self.driver.find_element(
             By.CSS_SELECTOR, "input[placeholder='URL (i.e. https://www.google.com/ or *)']"
@@ -180,6 +200,7 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         header_value_box.send_keys(header_value)
 
         header_value_box.send_keys(Keys.ENTER)
+        return
 
 
 def scrolldown(

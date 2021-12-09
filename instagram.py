@@ -50,11 +50,11 @@ def choose_random_account():
 
 def story_browsing(handle, duration):
     account = choose_random_account()
-
     timestamp = time.time()
+    header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-test-{timestamp}"}
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
-    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC) as browser:
+    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC, header=header) as browser:
         ig = InstagramTest(
             username=account["username"],
             password=account["password"],
@@ -77,13 +77,12 @@ def story_browsing(handle, duration):
     return
 
 def hashtag_browsing(hashtag, duration):
-
     account = choose_random_account()
-
     timestamp = time.time()
+    header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-test-{timestamp}"}
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
-    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC) as browser:
+    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC, header=header) as browser:
         ig = InstagramTest(
             username=account["username"],
             password=account["password"],
@@ -296,46 +295,20 @@ if __name__ == "__main__":
     #     time.sleep(HOUR_IN_SECONDS / 4)
 
     
-    #_ = hashtag_browsing(hashtag="cars", duration=.1)
+    _ = hashtag_browsing(hashtag="cars", duration=.1)
 
-    har_filename = 'test'
 
-    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC) as browser:
-        browser.driver.get("moz-extension://f1b1fd6e-9b21-4214-924e-511d15bc1580/data/options/options.html")
 
-        # import_file = browser.find_element_by_id('import_file')
-        # import_file.send_keys()
-        # import_button = self.browser.find_element_by_id('import_button')
-        # import_button.click()
 
-        from selenium.webdriver.common.by import By
-        from selenium.webdriver.common.keys import Keys
+    # har_filename = 'test'
+
+    # with FireFoxBrowser(
+    #     har_filename=har_filename, 
+    #     enable_quic=ENABLE_QUIC, 
+    #     header={"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": "ta:15:starlink-test-"}) as browser:
+
+    #     browser.driver.get("https://instagram.com")
         
-        # set url
-        url_box = browser.driver.find_element(
-            By.CSS_SELECTOR, "input[placeholder='URL (i.e. https://www.google.com/ or *)']"
-        )
-        url_box.send_keys("https://instagram.com")
-
-        # set header name
-        header_key_box = browser.driver.find_element(
-            By.CSS_SELECTOR, "input[placeholder='name (i.e. User-Agent)']"
-        )
-        header_key_box.send_keys("x-fb-product-log")
-
-        # set header value
-        header_value_box = browser.driver.find_element(
-            By.CSS_SELECTOR, "input[title='Enter a valid value']"
-        )
-        header_value_box.send_keys("ta:15:starlink-test-")
-
-        header_value_box.send_keys(Keys.ENTER)
-
-        browser.driver.get("https://www.instagram.com/")
-
-        time.sleep(5)
-
-
-        # body = browser.driver.find_element(By.TAG_NAME, "body")
-        # body.send_keys(Keys.CONTROL + 't')
-    
+        
+        
+    #     time.sleep(100)
