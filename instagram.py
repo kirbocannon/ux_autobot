@@ -283,32 +283,15 @@ def generate_repeatable_test_urls(page):
 
 
 if __name__ == "__main__":
-    # # Randomized Test
-    # for _ in range(100000):
-    #     try:
-    #         #_ = hashtag_browsing(hashtag="cars", duration=30)
-    #         _ = story_browsing(handle="thekingofdiet", duration=20)
-    #         break
-    #     except Exception:
-    #         logger.debug("Exception running test. Did not run test for this time slot")
+    # Randomized Test
+    for _ in range(100000):
+        try:
+            _ = hashtag_browsing(hashtag="cars", duration=1)
+            #_ = story_browsing(handle='"redbull"', duration=5)
+            #_ = story_browsing(handle="thekingofdiet", duration=5)
+            #_ = story_browsing(handle="theyoungtravelier", duration=5)
+            break
+        except Exception:
+            logger.debug("Exception running test. Did not run test for this time slot")
             
-    #     time.sleep(HOUR_IN_SECONDS / 4)
-
-    
-    _ = hashtag_browsing(hashtag="cars", duration=.1)
-
-
-
-
-    # har_filename = 'test'
-
-    # with FireFoxBrowser(
-    #     har_filename=har_filename, 
-    #     enable_quic=ENABLE_QUIC, 
-    #     header={"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": "ta:15:starlink-test-"}) as browser:
-
-    #     browser.driver.get("https://instagram.com")
-        
-        
-        
-    #     time.sleep(100)
+        time.sleep(HOUR_IN_SECONDS / 4)

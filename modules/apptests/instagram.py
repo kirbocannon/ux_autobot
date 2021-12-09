@@ -178,6 +178,6 @@ class InstagramTest(BaseTest):
         first_story.click()
 
         # wait for some period of time and let the stories roll...
-        time.sleep(duration)
+        time.sleep(60 * duration)
 
         return
