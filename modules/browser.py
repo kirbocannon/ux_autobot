@@ -19,19 +19,12 @@ from utils.system import kill_existing_proc
 PATH = get_abs_path(__file__)
 PATH_WINDOWS = str(PATH.parent).replace(r'/', r'\\')
 
-#PROCS_TO_KILL = ["java.exe", "firefox.exe", "browsermob-proxy"]
 PROCS_TO_KILL = ["firefox.exe"]
-#PROXY_SERVER_PATH = f"{PATH}/modules/browsermob-proxy-2.1.4/bin/browsermob-proxy.bat"
-#WINDOWS_PROCS_TO_KILL = ["java.exe", "firefox.exe", "browsermob-proxy"]
 WINDOWS_PROCS_TO_KILL = ["firefox.exe"]
-#LINUX_PROCS_TO_KILL = ["browsermob-prox", "browsermob-proxy", "java"]
-# WINDOWS_PROXY_SERVER_PATH = (
-#     f"{PATH}\\browsermob-proxy-2.1.4\\bin\\browsermob-proxy.bat"
-# )
-# LINUX_PROXY_SERVER_PATH = (
-#     f"{PATH}/modules/browsermob-proxy-2.1.4/bin/browsermob-proxy.bat"
-# )
-
+BASE_EXTENSIONS = [
+    "har_export_trigger-0.6.1-an+fx.xpi",
+    "header_mod.xpi"
+    ]
 
 
 class FireFoxBrowser: # TODO: add baseclass for browser
@@ -43,23 +36,28 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         har_session_name: Optional[str] = "networkanalysis",
         har_location: Optional[str] = f"{PATH.parent}\hars",
         har_filename: Optional[str] = "harfile",
-        har_extension_path: Optional[str] = None,
+        extension_path: Optional[str] = None,
+        extension_names: Optional[List[str]] = None,
         enable_quic: Optional[bool] = True,
         options: Optional[List[str]] = None
     ):
-        #if host_type == "windows" and not proxy_server_path:
         if host_type == "windows":
             #self.proxy_server_path = WINDOWS_PROXY_SERVER_PATH
-            if not har_extension_path:
-                har_extension_path = f"{PATH_WINDOWS}\extensions\\firefox\\har_export_trigger-0.6.1-an+fx.xpi"
+            if not extension_path:
+                extension_path = f"{PATH_WINDOWS}\extensions\\firefox\\"
+
             self._procs_to_kill = WINDOWS_PROCS_TO_KILL
 
-        #elif host_type == "linux" and not proxy_server_path:
         elif host_type == "linux":
-            if not har_extension_path:
-                self.har_extension_path = f"{PATH}\extensions\\firefox\\har_export_trigger-0.6.1-an+fx.xpi"
-            #self.proxy_server_path = LINUX_PROXY_SERVER_PATH
+            if not extension_path:
+                extension_path = f"{PATH}\extensions\\firefox\\"
+
             self._procs_to_kill = LINUX_PROCS_TO_KILL
+
+        if not extension_names:
+            self.extension_names = BASE_EXTENSIONS
+        else:
+            self.extension_names = self.extension_names + BASE_EXTENSIONS
 
         self.profile = webdriver.FirefoxProfile()
         self.driver = None
@@ -68,8 +66,8 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         self.har_session_name = har_session_name
         self.har_location = har_location
         self.har_filename = har_filename
+        self.extension_path = extension_path
         self.har = None
-        self.har_extension_path = har_extension_path
         self.enable_quic = enable_quic
         self.options = options
 
@@ -82,10 +80,10 @@ class FireFoxBrowser: # TODO: add baseclass for browser
             firefox_profile=self.profile,
             options=self.options
         )
-        self.driver.install_addon(self.har_extension_path, temporary=True)
-
-        # # Add HAR capture extension
-        self.driver.firefox_profile.add_extension(extension=self.har_extension_path)
+        # Add extensions here
+        for extension_name in self.extension_names:
+            self.driver.install_addon(self.extension_path + extension_name, temporary=True)
+            self.driver.firefox_profile.add_extension(extension=self.extension_path + extension_name)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -148,9 +146,40 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         self.profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/json")
         self.profile.set_preference("browser.download.folderList", 2)
 
+        # Statically set uuids for base extensions TODO: (very small chance of collision, try to make dynamic in future)
+        with open(f"{self.extension_path}mappings.json") as f:
+            self.profile.set_preference("extensions.webextensions.uuids", f.read())
+
         self.profile.webdriver_accept_untrusted_certs = True
         self.profile.update_preferences()
         return
+
+    def insert_header(url: str, header_key: str, header_value: str):
+        """
+            Inserts a header into the "Modify Header Value" extension 
+            which will send a specified header key/value pair to the specified
+            url for every request. This extension is installed as one of the base 
+            extensions for this program. More info: https://addons.mozilla.org/en-US/firefox/addon/modify-header-value/
+        """
+        # set url
+        url_box = self.driver.find_element(
+            By.CSS_SELECTOR, "input[placeholder='URL (i.e. https://www.google.com/ or *)']"
+        )
+        url_box.send_keys(url)
+
+        # set header name
+        header_key_box = self.driver.find_element(
+            By.CSS_SELECTOR, "input[placeholder='name (i.e. User-Agent)']"
+        )
+        header_key_box.send_keys(header_key)
+
+        # set header value
+        header_value_box = self.driver.find_element(
+            By.CSS_SELECTOR, "input[title='Enter a valid value']"
+        )
+        header_value_box.send_keys(header_value)
+
+        header_value_box.send_keys(Keys.ENTER)
 
 
 def scrolldown(
