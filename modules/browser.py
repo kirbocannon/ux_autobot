@@ -41,7 +41,7 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         extension_names: Optional[List[str]] = None,
         enable_quic: Optional[bool] = True,
         options: Optional[List[str]] = None,
-        header: Optional[Dict[str, str]] = None
+        headers: Optional[List[Dict[str, str]]] = None
     ):
         if host_type == "windows":
             if not extension_path:
@@ -71,7 +71,7 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         self.har = None
         self.enable_quic = enable_quic
         self.options = options
-        self.header = header
+        self.headers = headers
 
     def __enter__(self):
         self._build_options()
@@ -89,8 +89,8 @@ class FireFoxBrowser: # TODO: add baseclass for browser
             self.driver.firefox_profile.add_extension(extension=self.extension_path + extension_name)
 
         # add custom headers here
-        if self.header:
-            _ = self._insert_header(**self.header)
+        if self.headers:
+            _ = self._insert_headers(self.headers)
 
         return self
 
@@ -169,7 +169,7 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         self.profile.update_preferences()
         return
 
-    def _insert_header(self, url: str, header_key: str, header_value: str) -> None:
+    def _insert_headers(self, headers: List[Dict[str, str]]) -> None:
         """
             Inserts a header into the "Modify Header Value" extension 
             which will send a specified header key/value pair to the specified
@@ -181,27 +181,36 @@ class FireFoxBrowser: # TODO: add baseclass for browser
         # format to get to an extension's page should be like the following: #moz-extension://2bd549f8-aeba-40db-a51c-398f96c7ec16/data/options/options.html
         self.driver.get(f"moz-extension://{json.loads(self._extension_mappings)['jid0-oEwF5ZcskGhjFv4Kk4lYc@jetpack']}/data/options/options.html")
 
+        for header in headers:
+            _ = self._insert_header(**header)
+        
+        return
+
+    def _insert_header(self, url: str, header_key: str, header_value: str) -> None:
         # set url
         url_box = self.driver.find_element(
             By.CSS_SELECTOR, "input[placeholder='URL (i.e. https://www.google.com/ or *)']"
         )
+        url_box.clear()
         url_box.send_keys(url)
-
+        
         # set header name
         header_key_box = self.driver.find_element(
             By.CSS_SELECTOR, "input[placeholder='name (i.e. User-Agent)']"
         )
+        header_key_box.clear()
         header_key_box.send_keys(header_key)
 
         # set header value
         header_value_box = self.driver.find_element(
             By.CSS_SELECTOR, "input[title='Enter a valid value']"
         )
+        header_value_box.clear()
         header_value_box.send_keys(header_value)
 
         header_value_box.send_keys(Keys.ENTER)
-        return
 
+        return 
 
 def scrolldown(
     driver: webdriver, cnt: Optional[int] = 1, delay: Optional[int] = 5

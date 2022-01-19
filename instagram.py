@@ -51,10 +51,11 @@ def choose_random_account():
 def story_browsing(handle, duration):
     account = choose_random_account()
     timestamp = time.time()
-    header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-debug-{timestamp}"}
+    log_header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-debug-{timestamp}"}
+    loss_detect_header = {"url": "https://instagram.com", "header_key": "X-FB-Socket-Option", "header_value": "QUIC_ADAPTIVE_LOSS_DETECTION=1"}
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
-    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC, header=header) as browser:
+    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC, headers=[log_header, loss_detect_header]) as browser:
         ig = InstagramTest(
             username=account["username"],
             password=account["password"],
@@ -79,10 +80,11 @@ def story_browsing(handle, duration):
 def hashtag_browsing(hashtag, duration):
     account = choose_random_account()
     timestamp = time.time()
-    header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-debug-{timestamp}"}
+    log_header = {"url": "https://instagram.com", "header_key": "x-fb-product-log", "header_value": f"ta:15:starlink-debug-{timestamp}"}
+    loss_detect_header = {"url": "https://instagram.com", "header_key": "X-FB-Socket-Option", "header_value": "QUIC_ADAPTIVE_LOSS_DETECTION=1"}
     har_filename = f"instagram_{timestamp}-{'http3' if ENABLE_QUIC else 'http1.1-2'}"
 
-    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC, header=header) as browser:
+    with FireFoxBrowser(har_filename=har_filename, enable_quic=ENABLE_QUIC, headers=[log_header, loss_detect_header]) as browser:
         ig = InstagramTest(
             username=account["username"],
             password=account["password"],
@@ -291,7 +293,7 @@ if __name__ == "__main__":
             #_ = story_browsing(handle="thekingofdiet", duration=5)
             #_ = story_browsing(handle="theyoungtravelier", duration=5)
             break
-        except Exception:
-            logger.debug("Exception running test. Did not run test for this time slot")
+        except Exception as e:
+            logger.debug(f"Exception running test. Did not run test for this time slot: {e}")
             
         time.sleep(HOUR_IN_SECONDS / 4)
